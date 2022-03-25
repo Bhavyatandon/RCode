@@ -1,0 +1,199 @@
+---
+title: "RMarkown"
+author: "Bhavya Tandon"
+date: "15/08/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+
+# QUE 1 Merged Data
+
+cust = read.csv("C:/Users/Bhavya Tandon/Documents/Analytics R/Assignments R/R case study 1 (Retail)/Customer.csv")
+prodcat = read.csv("C:/Users/Bhavya Tandon/Documents/Analytics R/Assignments R/R case study 1 (Retail)/prod_cat_info.csv")
+trans = read.csv("C:/Users/Bhavya Tandon/Documents/Analytics R/Assignments R/R case study 1 (Retail)/Transactions.csv")
+
+
+# (A)
+TransCust <- merge(x=trans , y=cust, by.x="cust_id", by.y="customer_Id", all.x=TRUE)
+Data <- merge(x=TransCust, y=prodcat, by.x="prod_cat_code", by.y="prod_cat_code", all.x=TRUE)
+
+# (B)
+
+library(dplyr)
+cust <- dplyr::rename(cust, "cust_id" = "customer_Id")
+TransCust_dplyr <- dplyr::left_join(trans, cust, by="cust_id")
+Data_dplyr <- dplyr::left_join(TransCust_dplyr,prodcat, by = "prod_cat_code")
+```
+
+
+```{r}
+# QUE 2
+
+# (A) Column names and their corresponding datatypes
+str(Data)
+
+# (B) Top/Bottom 10 observations
+head(Data, 10)
+tail(Data, 10)
+
+# (C)
+summary(Data[c(7:9)])
+```
+
+'n'    represents Frequencies of Categorical variables.
+x[[i]] denotes Categorical Variable.
+
+```{r}
+# (D)
+library('janitor')
+lapply(Data[c(1,5,10,12:16)],tabyl)
+```
+
+
+Histograms for Continuous Variables -
+```{r}
+# QUE 3
+
+require(ggplot2)
+require(dplyr)
+
+ggplot(data = Data) + aes(x = Rate) + 
+  geom_histogram(fill='white', color='black',binwidth=30)+
+  ggtitle("Histogram (Rate Variable)")
+
+ggplot(data = Data) + aes(x = Tax) + 
+  geom_histogram(fill='lightblue', color='red',binwidth=10)+
+  ggtitle("Histogram (Tax Variable)")
+
+ggplot(data = Data) + aes(x = total_amt) +
+  geom_histogram(bins=100,fill='yellow', color='lightblue')+
+  ggtitle("Histogram (Total Amount Variable)")
+```
+
+Histograms for Categorical Variables -
+```{r}
+
+Prod_SubCat <- Data %>% dplyr::group_by(prod_subcat) %>% dplyr::summarise(Freq = n() )
+
+ggplot(data = Prod_SubCat) + 
+  aes(x = Freq, y =prod_subcat ) + 
+  geom_bar(stat = 'identity', fill = 'lightblue', color = 'red', width = 0.9) +geom_text(aes(label = Freq), size = 3,hjust =1.0, color='black')
+
+Prod_Category <- Data %>% dplyr::group_by(prod_cat) %>% dplyr::summarise(Freq = n() )
+
+ggplot(data = Prod_Category) + 
+  aes(x = Freq, y = prod_cat ) + 
+  geom_bar(stat = 'identity', fill = 'yellow', color = 'red',width = 0.9) +
+  geom_text(aes(label = Freq), size = 3,hjust =1.1, color='black')
+
+Prod_SubCatCode <- Data %>%
+  dplyr::group_by(prod_sub_cat_code) %>%
+  dplyr::summarise(Freq = n() )
+
+ggplot(data = Prod_SubCatCode) + 
+  aes(x = prod_sub_cat_code, y = Freq ) + 
+  geom_bar(stat = 'identity', fill = 'purple', color = 'yellow') +
+  geom_text(aes(label = Freq), size = 3,vjust =-0.2, color='black') + scale_x_discrete(limit=seq(0,12,by=1))
+
+
+
+StoreType <- Data %>% dplyr::group_by(Store_type) %>% dplyr::summarise(Freq = n() )
+
+ggplot(data = StoreType) + 
+  aes(x = Store_type, y = Freq ) + 
+  geom_bar(stat = 'identity', fill = 'blue', color = 'red', width =0.5)+
+  geom_text(aes(label = Freq), size = 3,vjust =-0.2, color='black')
+
+Gender <- Data %>% dplyr::group_by(Gender) %>% dplyr::summarise(Freq = n() )
+
+ggplot(data = Gender ) + 
+  aes(x = Gender, y = Freq ) + 
+  geom_bar(stat = 'identity', fill = 'orange', color = 'blue',width =0.5)+
+  geom_text(aes(label = Freq), size = 3,vjust =-0.2, color='black')
+
+CityCode <- Data %>% dplyr::group_by(city_code) %>% dplyr::summarise(Freq = n())
+
+bar <-ggplot(data = CityCode ) + 
+  aes(x = city_code, y = Freq ) + 
+  geom_bar(stat = 'identity', fill = 'yellow', color = 'red',width =0.5) +
+  geom_text(aes(label = Freq), size = 3,vjust =-0.2, color='black')
+bar + scale_x_discrete(limit=seq(0,10,by=1))
+```
+
+```{r}
+
+# QUE 4 - (A)
+library(lubridate)
+Data$tran_date <-as.Date(Data$tran_date,"%d-%m-%Y")
+max(Data$tran_date)-min(Data$tran_date)
+
+# QUE 4 (B)
+
+Data[Data$total_amt<0,]%>%dplyr::summarize(Negative_Trans_Count=n())
+```
+
+
+
+Books & Electronics are popular between both Gender
+```{r}
+#QUE 5
+library(dplyr)
+Data %>% 
+  dplyr::group_by(prod_cat,Gender)%>% 
+  summarise(TopCategory = n())%>%filter(Gender =='M') %>% arrange(desc(TopCategory))
+Data %>%
+  dplyr::group_by(prod_cat,Gender)%>% 
+  summarise(TopCategory = n())%>%filter(Gender =='F') %>% arrange(desc(TopCategory))
+```
+
+```{r}
+#QUE 6
+Data %>% dplyr::group_by(city_code)%>% 
+  summarise(MaxCustPercent =n()*100/nrow(Data)) %>% 
+  slice_max(MaxCustPercent,n=1)
+```
+
+```{r}
+#QUE7
+Data %>% dplyr::group_by(Store_type)%>% 
+  summarise(Value = sum(total_amt),Qty = sum(Qty)) %>% 
+  arrange(desc(Value,Qty))                               
+```
+
+```{r}
+#QUE8
+Data %>% dplyr::group_by(Store_type,prod_cat)%>% 
+  summarise(TotalAmt = sum(total_amt))%>%
+  filter((Store_type == "Flagship store" & prod_cat == "Electronics") | (Store_type == "Flagship store" & prod_cat == "Clothing"))
+```
+
+```{r}
+#QUE9
+Data %>% dplyr::group_by(Gender,prod_cat)%>% 
+  summarise(TotalAmt = sum(total_amt))%>%
+  filter(Gender == "M" & prod_cat == "Electronics")
+```
+
+```{r}
+#QUE10
+Data[Data$total_amt >0,] %>%dplyr::group_by(cust_id)%>% 
+  summarise(TransId_Unique = unique(transaction_id))%>% 
+  count(cust_id)%>%filter(n>10) %>%
+  rename("UniqueTrans_Count" = "n")
+```
+
+```{r}
+
+#QUE11 (A)
+Data %>% dplyr::group_by(prod_cat)%>% 
+  summarise(TotalAmt = sum(total_amt))%>%
+  filter(prod_cat == "Electronics" | prod_cat == "Books")
+
+#QUE11 (B)
+Data %>%filter(tran_date > "2014-01-01" & tran_date < "2014-03-01" ) %>%
+  summarize(TotalAmt = sum(total_amt))
+
+```
+
